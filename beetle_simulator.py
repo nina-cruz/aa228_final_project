@@ -28,89 +28,62 @@ class Simulator:
         self.tree_to_tree = 2
         self.tree_to_empty = 1
 
-    def replicate_and_eat(self):
+        self.stay_status = np.array([self.stay_empty, self.stay_tree]) # empty is status 0, alive is status 1
+        self.status_to_status = np.array([[self.empty_to_empty, self.empty_to_tree], [self.tree_to_empty, self.tree_to_tree]])
+
+    def replicate(self):
         for i in range(self.n):
             for j in range(self.n):
                 if self.trees[(i,j)] > 0:
                     # replicate beetles if tree is alive
                     self.beetles[(i,j)] = np.ceil(self.beetles[(i,j)] * self.beetle_repl_rate)
 
-                    # eating step -- subtract 1 tree hp for each beetle, hp >= 0 for all trees
-                    self.trees[(i,j)] = max(0, self.trees[(i,j)] - self.beetles[(i,j)])
                 else:
                     # decay beetle counts in empty squares
                     self.beetles[(i,j)] = np.floor(self.beetles[(i,j)] * self.beetle_decay_rate)
-    
+
+    def eat(self):
+        # eating step -- subtract 1 tree hp for each beetle, hp >= 0 for all trees
+        for i in range(self.n):
+            for j in range(self.n):
+                self.trees[(i,j)] = max(0, self.trees[(i,j)] - self.beetles[(i,j)])
+
     def move_beetles(self):
         # create temporary grid to store new beetle counts (need to preserve intial beetle counts to multiply)
         temp_beetles = np.zeros_like(self.beetles)
-
-        for i in range(self.n):
-            for j in range(self.n):
-                neighbors = [] # neighbors on the grid
-                params = [] # dirichlet parameters
-
-                # moving from a tree square
-                if self.trees[(i,j)] > 0:
-                    # left
-                    if j-1 >= 0:
-                        dir = self.tree_to_tree if self.trees[(i,j-1)] > 0 else self.tree_to_empty
-                        neighbors.append((i,j-1))
-                        params.append(dir)
-                    # right
-                    if j+1 < self.n:
-                        dir = self.tree_to_tree if self.trees[(i,j+1)] > 0 else self.tree_to_empty
-                        neighbors.append((i,j+1))
-                        params.append(dir)
-                    # above
-                    if i-1 >= 0:
-                        dir = self.tree_to_tree if self.trees[(i-1,j)] > 0 else self.tree_to_empty
-                        neighbors.append((i-1,j))
-                        params.append(dir)
-                    # below
-                    if i+1 < self.n:
-                        dir = self.tree_to_tree if self.trees[(i+1,j)] > 0 else self.tree_to_empty
-                        neighbors.append((i+1,j))
-                        params.append(dir)
-                    # add stay in square (i,j)
-                    neighbors.append((i,j))
-                    params.append(self.stay_tree)
-
-                # moving from an empty square
-                else:
-                    # left
-                    if j-1 >= 0:
-                        dir = self.empty_to_tree if self.trees[(i,j-1)] > 0 else self.empty_to_empty
-                        neighbors.append((i,j-1))
-                        params.append(dir)
-                    # right
-                    if j+1 < self.n:
-                        dir = self.empty_to_tree if self.trees[(i,j+1)] > 0 else self.empty_to_empty
-                        neighbors.append((i,j+1))
-                        params.append(dir)
-                    # above
-                    if i-1 >= 0:
-                        dir = self.empty_to_tree if self.trees[(i-1,j)] > 0 else self.empty_to_empty
-                        neighbors.append((i-1,j))
-                        params.append(dir)
-                    # below
-                    if i+1 < self.n:
-                        dir = self.empty_to_tree if self.trees[(i+1,j)] > 0 else self.empty_to_empty
-                        neighbors.append((i+1,j))
-                        params.append(dir)
-                    # add stay in square (i,j)
-                    neighbors.append((i,j))
-                    params.append(self.stay_empty)
+        directions = np.array([[-1,0],[1,0],[0,-1],[0,1]]) # left, right, above, below
+        for i in range(0, self.n):
+            for j in range(0, self.n):
+                cur = np.array([i,j])
+                
+                neighbours = [cur] # Create list of valid neighbours (including the current square)
+                for direction in directions: 
+                    potentialNeighbour = cur + direction
+                    if self.withinBounds(potentialNeighbour):
+                        neighbours.append(potentialNeighbour)        
+                        
+                originStatus = int(self.trees[*cur] > 0) # 0 if empty, 1 if tree exists
+                params = [self.stay_status[originStatus]] # Staying put comes first in params list
+                for neighbour in neighbours:
+                    neighbourStatus = int(self.trees[*neighbour] > 0)
+                    params.append(self.status_to_status[originStatus, neighbourStatus]) # Set dirichlet parameters for each neighbour
 
                 square_probs = np.random.dirichlet(params)
-                # move beetles with proportions from square_probs
-                for ind,square in enumerate(neighbors):
-                    temp_beetles[square] += np.floor(square_probs[ind]*self.beetles[(i,j)])
-        
+                squareAddBeetles = np.floor(square_probs*self.beetles[*cur]) # Beetles that move to each neighbour
+
+                for square, movedBeetles in zip(neighbours, squareAddBeetles):
+                    temp_beetles[*square] += movedBeetles
+
         self.beetles = temp_beetles
 
+    def withinBounds(self, square):
+        # Checks that a given square is within the bounds of the grid
+        return np.all((0 <= square) & (square < self.n))
+
+
     def simulate_timestep(self):
-        self.replicate_and_eat()
+        self.replicate()
+        self.eat()
         self.move_beetles()
 
 
