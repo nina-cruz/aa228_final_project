@@ -103,15 +103,10 @@ class Simulator:
             return 0
 
 def main():
-    #forest, beetles = utils.generateRandomForest(10, 2, 200, 5, 5000, seed)
+    seed = 0
+    np.random.seed(0)
+    forest, beetles = utils.generateRandomForest(10, 2, 200, 5, 5000, seed)
     
-
-    empty_locations = [(0,5),(0,2),(2,6),(2,7),(3,2),(4,9),(3,9),(8,7)]
-    forest = np.ones((10,10))*5000
-    for loc in empty_locations:
-        forest[loc] = 0
-    beetles = np.zeros((10,10))
-    beetles[0,0] = 200
     sim = Simulator(forest.copy(), beetles.copy())
     for i in range(100):
         
