@@ -15,7 +15,7 @@ class Simulator:
         
 
         # parameters
-        self.beetle_repl_rate = 1.3#1.1
+        self.beetle_repl_rate = 1.1#1.1
         self.beetle_decay_rate = 0.7
 
         # parameters for Dirichlet beetle movement prob from empty square
@@ -44,9 +44,13 @@ class Simulator:
 
     def eat(self):
         # eating step -- subtract 1 tree hp for each beetle, hp >= 0 for all trees
-        for i in range(self.n):
-            for j in range(self.n):
-                self.trees[(i,j)] = max(0, self.trees[(i,j)] - self.beetles[(i,j)])
+        r = 0
+        nonzero = np.argwhere(self.beetles)
+        for cur in nonzero:
+            self.trees[*cur] = max(0, self.trees[*cur] - self.beetles[*cur])
+            if self.trees[*cur] == 0:
+                r -= 1
+        return r
 
     def move_beetles(self):
         # create temporary grid to store new beetle counts (need to preserve intial beetle counts to multiply)
@@ -63,7 +67,8 @@ class Simulator:
                     
             originStatus = int(self.trees[*cur] > 0) # 0 if empty, 1 if tree exists
             params = [self.stay_status[originStatus]] # Staying put comes first in params list
-            for neighbour in neighbours:
+            for square in range(1, len(neighbours)):
+                neighbour = neighbours[square]
                 neighbourStatus = int(self.trees[*neighbour] > 0)
                 params.append(self.status_to_status[originStatus, neighbourStatus]) # Set dirichlet parameters for each neighbour
 
@@ -82,18 +87,41 @@ class Simulator:
 
     def simulate_timestep(self):
         self.replicate()
-        self.eat()
+        r = self.eat()
         self.move_beetles()
+        return r
 
+    def take_action(self,a):
+        # 0 = no action
+        # 1, ..., n^2 = cut down tree in that square and set beetles to 0
+        if a != 0:
+            square = np.unravel_index(a-1, (self.n,self.n))
+            self.beetles[square] = 0
+            self.trees[square] = 0
+            return -1 # immediate reward
+        else:
+            return 0
 
 def main():
-    forest, beetles = utils.generateRandomForest(10, 2, 100, 5, 5000)
-    sim = Simulator(forest, beetles)
-
-    for i in range(1000):
-        sim.simulate_timestep()
+    #forest, beetles = utils.generateRandomForest(10, 2, 200, 5, 5000, seed)
     
+
+    empty_locations = [(0,5),(0,2),(2,6),(2,7),(3,2),(4,9),(3,9),(8,7)]
+    forest = np.ones((10,10))*5000
+    for loc in empty_locations:
+        forest[loc] = 0
+    beetles = np.zeros((10,10))
+    beetles[0,0] = 200
+    sim = Simulator(forest.copy(), beetles.copy())
+    for i in range(100):
+        
+        sim.simulate_timestep()
+
     utils.plotTrees(sim.trees)
+
+
+    
+    
 
 if __name__ == "__main__":
     main()

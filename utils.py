@@ -4,11 +4,12 @@ import numpy as np
 
 
 
-def generateRandomForest(nLength, nSources, nBeetles, nEmpty, maxHealth):
+def generateRandomForest(nLength, nSources, nBeetles, nEmpty, maxHealth, seed = None):
     '''Method for generating a forest on which to run the simulator'''
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed)
     trees = np.ones((nLength, nLength))*maxHealth
     beetles = np.zeros((nLength, nLength))
+
 
     # The lines below select the prescribed number of empty and source squares and set them accordingly
     emptySquares = np.unravel_index(rng.choice(trees.size, replace=False, size=nEmpty), trees.shape)
@@ -21,10 +22,6 @@ def generateRandomForest(nLength, nSources, nBeetles, nEmpty, maxHealth):
 
 
 def plotTrees(trees):
-    #cmap = mpl.colors.ListedColormap(["green", "blue"])
-    #bounds = 
-
-
     trees = ((trees / 5000) * 100).astype(int)
     plt.figure(figsize=trees.shape)
     plt.imshow(trees, cmap=mpl.colormaps['viridis'])
