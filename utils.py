@@ -21,8 +21,8 @@ def generateRandomForest(nLength, nSources, nBeetles, nEmpty, maxHealth, seed = 
     return trees, beetles
 
 
-def plotTrees(trees):
-    trees = ((trees / 5000) * 100).astype(int)
+def plotTrees(trees, max_health= 5000):
+    trees = ((trees / max_health) * 100).astype(int)
     plt.figure(figsize=trees.shape)
     plt.imshow(trees, cmap=mpl.colormaps['viridis'])
     plt.show()

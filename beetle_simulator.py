@@ -56,8 +56,9 @@ class Simulator:
         nonzero = np.argwhere(self.beetles)
         for cur in nonzero:
             self.trees[*cur] = max(0, self.trees[*cur] - self.beetles[*cur])
-            if self.trees[*cur] == STATE_EATEN:
-                r -= self.reward_eaten
+            if self.trees[*cur] == 0:
+                self.trees[*cur] = STATE_EATEN
+                r += self.reward_eaten
         return r
 
     def move_beetles(self):
@@ -114,6 +115,19 @@ class Simulator:
         living_trees = np.argwhere(self.trees > 0)
         actions = np.vstack((actions, living_trees))
         return actions
+    
+    def get_available_actions_reduced(self):
+        # Actions which involve cutting trees within radius to an eaten tree.
+        radius = 3
+        actions = np.array([-1,-1], ndmin=2) # No action
+        consumed_trees = np.argwhere(self.trees == -2)
+        living_trees = np.argwhere(self.trees > 0)
+        for living_tree in living_trees:
+            for consumed_tree in consumed_trees:
+                if np.linalg.norm(living_tree - consumed_tree) < radius:
+                    actions = np.append(actions,np.expand_dims(living_tree, axis=0), axis=0)
+                    break
+        return actions
         
             
 def main():
@@ -122,14 +136,16 @@ def main():
     forest, beetles = utils.generateRandomForest(10, 2, 200, 5, 5000, seed)
     
     sim = Simulator(forest.copy(), beetles.copy())
-    for i in range(100):
-        
+    for i in range(1000):
         sim.simulate_timestep()
 
     
     sim.take_action(np.array([-1,-1]))
 
-    utils.plotTrees(sim.trees)
+    sim.get_available_actions_reduced()
+
+
+    utils.plotTrees(sim.trees, max_health=1000)
 
 
 if __name__ == "__main__":
