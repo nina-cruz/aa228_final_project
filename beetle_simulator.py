@@ -2,6 +2,12 @@ import numpy as np
 import random
 import utils
 
+
+STATE_ALIVE = 1
+STATE_BLANK = 0
+STATE_FELLED = -1
+STATE_EATEN = -2
+
 class Simulator:
     def __init__(self, trees, beetles):
         # n: size of grid (nxn)
@@ -12,9 +18,11 @@ class Simulator:
         self.beetles = beetles
         self.n = trees.shape[0]
 
-        
+        # Rewards
+        self.reward_eaten = -1
+        self.reward_cut = -1
 
-        # parameters
+        # sample
         self.beetle_repl_rate = 1.1#1.1
         self.beetle_decay_rate = 0.7
 
@@ -48,8 +56,8 @@ class Simulator:
         nonzero = np.argwhere(self.beetles)
         for cur in nonzero:
             self.trees[*cur] = max(0, self.trees[*cur] - self.beetles[*cur])
-            if self.trees[*cur] == 0:
-                r -= 1
+            if self.trees[*cur] == STATE_EATEN:
+                r -= self.reward_eaten
         return r
 
     def move_beetles(self):
@@ -94,14 +102,20 @@ class Simulator:
     def take_action(self,a):
         # 0 = no action
         # 1, ..., n^2 = cut down tree in that square and set beetles to 0
-        if a != 0:
-            square = np.unravel_index(a-1, (self.n,self.n))
-            self.beetles[square] = 0
-            self.trees[square] = 0
-            return -1 # immediate reward
+        if np.any(a != np.array([-1,-1])):
+            self.beetles[*a] = 0
+            self.trees[*a] = STATE_FELLED
+            return self.reward_cut # immediate reward
         else:
             return 0
 
+    def get_available_actions(self):
+        actions = np.array([-1,-1]) # No action
+        living_trees = np.argwhere(self.trees > 0)
+        actions = np.vstack((actions, living_trees))
+        return actions
+        
+            
 def main():
     seed = 0
     np.random.seed(0)
@@ -112,11 +126,11 @@ def main():
         
         sim.simulate_timestep()
 
+    
+    sim.take_action(np.array([-1,-1]))
+
     utils.plotTrees(sim.trees)
 
-
-    
-    
 
 if __name__ == "__main__":
     main()
