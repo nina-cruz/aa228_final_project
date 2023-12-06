@@ -3,6 +3,7 @@ import numpy as np
 import beetle_simulator
 import utils
 from multiprocessing import pool
+import time
 
 # inspiration from https://github.com/griffinbholt/decisionmaking-code-py/blob/main/src/ch09.py
 GAMMA = 0.9
@@ -10,7 +11,7 @@ GAMMA = 0.9
 def generate_simulator():
     seed = 0
     np.random.seed(0)
-    forest, beetles = utils.generateRandomForest(10, 1, 200, 5, 5000, seed)
+    forest, beetles = utils.generateRandomForest(10, 1, 200, 5, 500, seed)
     
     sim = beetle_simulator.Simulator(forest.copy(), beetles.copy())
     return sim
@@ -38,10 +39,23 @@ def sparse_sampling(sim, trees, beetles, d, m):
 
 def main():
     sim = generate_simulator()
-    # number of timesteps
-    a, u = sparse_sampling(sim, sim.trees, sim.beetles, d = 3, m = 10)
-    return a,u
+    timesteps = 100
+    actions = []
+    utility = 0
+
+    for i in range(timesteps):
+        start = time.time()
+        a, u = sparse_sampling(sim, sim.trees, sim.beetles, d = 2, m = 4)
+        actions.append(a)
+        print("Action taken: {}".format(a))
+        utility += sim.take_action(a)
+        utility += sim.simulate_timestep()
+        end = time.time()
+        print("Time elapsed for timestep {} of {}: {}".format(i+1, timesteps, end-start))
+
+    return actions, utility
 
 if __name__ == "__main__":
     a,u = main()
-    print(a,u)
+    # print(a,u)
+    print("Utility: ", u)
