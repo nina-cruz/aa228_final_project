@@ -19,7 +19,7 @@ class Simulator:
         self.n = trees.shape[0]
 
         # Rewards
-        self.reward_eaten = -1
+        self.reward_eaten = -10
         self.reward_cut = -1
 
         # sample
