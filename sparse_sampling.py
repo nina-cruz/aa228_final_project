@@ -30,9 +30,9 @@ def repeat_action(sim, trees, beetles, d, m, a):
 
 def sparse_sampling(sim, trees, beetles, d, m):
     if d <= 0: # Rollout
-        aroll = [-1,-1]
-        droll = 10
-        mroll = 1
+        aroll = [-1,-1] # What action to try
+        droll = 10 # For how long
+        mroll = 1 # How many sampled states for each action
         aroll, uroll = repeat_action(sim, trees, beetles, droll, mroll, aroll)
         return (aroll, uroll)
 
