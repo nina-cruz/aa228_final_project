@@ -49,13 +49,9 @@ def sparse_sampling(sim, trees, beetles, d, m):
             temp_sim = beetle_simulator.Simulator(trees.copy(), beetles.copy())
             r = temp_sim.take_action(a)
             r += temp_sim.simulate_timestep()
-            
-            
             trees_prime, beetles_prime = temp_sim.trees, temp_sim.beetles
-
             a_prime, u_prime = sparse_sampling(temp_sim, trees_prime, beetles_prime, d - 1, m)
             u += (r + GAMMA * u_prime) / m
-        print(a, u)
         if u > best_u:
             best_a, best_u = (a,u)
     return best_a, best_u
@@ -75,7 +71,6 @@ def main():
         utility += sim.simulate_timestep()
         end = time.time()
         print("Time elapsed for timestep {} of {}: {}".format(i+1, timesteps, end-start))
-
     return actions, utility
 
 if __name__ == "__main__":
