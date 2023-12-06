@@ -82,11 +82,13 @@ class Simulator:
                 params.append(self.status_to_status[originStatus, neighbourStatus]) # Set dirichlet parameters for each neighbour
 
             square_probs = np.random.dirichlet(params)
+            
             squareAddBeetles = np.floor(square_probs*self.beetles[*cur]) # Beetles that move to each neighbour
+            remnant = self.beetles[*cur] - np.sum(squareAddBeetles)      
+            squareAddBeetles += np.random.multinomial(remnant, square_probs)
 
             for square, movedBeetles in zip(neighbours, squareAddBeetles):
                 temp_beetles[*square] += movedBeetles
-
         self.beetles = temp_beetles
 
     def withinBounds(self, square):
@@ -136,8 +138,9 @@ def main():
     forest, beetles = utils.generateRandomForest(10, 2, 200, 5, 5000, seed)
     
     sim = Simulator(forest.copy(), beetles.copy())
-    for i in range(1000):
+    for i in range(50):
         sim.simulate_timestep()
+        
 
     
     sim.take_action(np.array([-1,-1]))
