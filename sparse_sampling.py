@@ -1,6 +1,6 @@
 # Sparse Sampling
 import numpy as np
-import beetle_simulator
+import beetle_simulator_unfixed as beetle_sim
 import utils
 from multiprocessing import pool
 import time
@@ -11,25 +11,30 @@ GAMMA = 0.9
 def generate_simulator():
     seed = 0
     np.random.seed(0)
-    forest, beetles = utils.generateRandomForest(10, 1, 200, 5, 500, seed)
+    forest, beetles = utils.generateRandomForest(10, 1, 200, 5, 5000, seed)
     
-    sim = beetle_simulator.Simulator(forest.copy(), beetles.copy())
+    sim = beetle_sim.Simulator(forest.copy(), beetles.copy())
     return sim
 
 def repeat_action(sim, trees, beetles, d, m, a):
-    if d <= 0: # Rollout
-        return (None, 0)
-    u = 0.0
-    for _ in range(m):
-        # rand step
-        temp_sim = beetle_simulator.Simulator(trees.copy(), beetles.copy())
-        r = temp_sim.take_action(a)
-        r += temp_sim.simulate_timestep()
-        trees_prime, beetles_prime = temp_sim.trees, temp_sim.beetles
+    # if d <= 0: # Rollout
+    #     return (None, 0)
+    # u = 0.0
+    # for _ in range(m):
+    #     # rand step
+    #     temp_sim = beetle_sim.Simulator(trees.copy(), beetles.copy())
+    #     r = temp_sim.take_action(a)
+    #     r += temp_sim.simulate_timestep()
+    #     trees_prime, beetles_prime = temp_sim.trees, temp_sim.beetles
 
-        a_prime, u_prime = repeat_action(temp_sim, trees_prime, beetles_prime, d - 1, m, a)
-        u += (r + GAMMA * u_prime) / m
-    return a, u
+    #     a_prime, u_prime = repeat_action(temp_sim, trees_prime, beetles_prime, d - 1, m, a)
+    #     u += (r + GAMMA * u_prime) / m
+    # return a, u
+    r = 0
+    for _ in range(d):
+        r += sim.take_action(a)
+        r += sim.simulate_timestep()
+    return [-1,-1], r
 
 
 def sparse_sampling(sim, trees, beetles, d, m):
@@ -46,7 +51,7 @@ def sparse_sampling(sim, trees, beetles, d, m):
         u = 0.0
         for _ in range(m):
             # rand step
-            temp_sim = beetle_simulator.Simulator(trees.copy(), beetles.copy())
+            temp_sim = beetle_sim.Simulator(trees.copy(), beetles.copy())
             r = temp_sim.take_action(a)
             r += temp_sim.simulate_timestep()
             trees_prime, beetles_prime = temp_sim.trees, temp_sim.beetles
@@ -64,12 +69,13 @@ def main():
 
     for i in range(timesteps):
         start = time.time()
-        a, u = sparse_sampling(sim, sim.trees, sim.beetles, d = 2, m = 4)
+        a, u = sparse_sampling(sim, sim.trees, sim.beetles, d = 2, m = 5)
         actions.append(a)
         print("Action taken: {}".format(a))
         utility += sim.take_action(a)
         utility += sim.simulate_timestep()
         end = time.time()
+        utils.plotTrees(sim.trees, i, max_health = 5000)
         print("Time elapsed for timestep {} of {}: {}".format(i+1, timesteps, end-start))
     return actions, utility
 
