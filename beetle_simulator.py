@@ -84,8 +84,6 @@ class Simulator:
             square_probs = np.random.dirichlet(params)
             
             squareAddBeetles = np.floor(square_probs*self.beetles[*cur]) # Beetles that move to each neighbour
-            remnant = self.beetles[*cur] - np.sum(squareAddBeetles)      
-            squareAddBeetles += np.random.multinomial(remnant, square_probs)
 
             for square, movedBeetles in zip(neighbours, squareAddBeetles):
                 temp_beetles[*square] += movedBeetles
