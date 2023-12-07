@@ -120,7 +120,7 @@ class Simulator:
         # Actions which involve cutting trees within radius to an eaten tree.
         radius = 3
         actions = np.array([-1,-1], ndmin=2) # No action
-        consumed_trees = np.argwhere(self.trees == -2)
+        consumed_trees = np.argwhere(self.beetles > 0)
         living_trees = np.argwhere(self.trees > 0)
         for living_tree in living_trees:
             for consumed_tree in consumed_trees:
