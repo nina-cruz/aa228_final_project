@@ -21,11 +21,12 @@ def generateRandomForest(nLength, nSources, nBeetles, nEmpty, maxHealth, seed = 
     return trees, beetles
 
 
-def plotTrees(trees, max_health= 5000):
+def plotTrees(trees, iter=0, max_health= 5000):
     trees = ((trees / max_health) * 100).astype(int)
     plt.figure(figsize=trees.shape)
     plt.imshow(trees, cmap=mpl.colormaps['viridis'])
-    plt.show()
+    plt.savefig("tree_plots/trees_" + str(iter) + ".png")
+    plt.close()
 
 def plotBeetles(beetles):
     pass

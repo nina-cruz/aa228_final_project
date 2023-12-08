@@ -11,7 +11,7 @@ GAMMA = 0.9
 def generate_simulator():
     seed = 0
     np.random.seed(0)
-    forest, beetles = utils.generateRandomForest(10, 1, 200, 5, 5000, seed)
+    forest, beetles = utils.generateRandomForest(10, 1, 200, 5, 500, seed)
     
     sim = beetle_sim.Simulator(forest.copy(), beetles.copy())
     return sim
@@ -32,8 +32,8 @@ def repeat_action(sim, trees, beetles, d, m, a):
     # return a, u
     r = 0
     for _ in range(d):
-        r += sim.take_action(a)
-        r += sim.simulate_timestep()
+        r += GAMMA**d * sim.take_action(a)
+        r += GAMMA**d * sim.simulate_timestep()
     return [-1,-1], r
 
 
@@ -46,7 +46,7 @@ def sparse_sampling(sim, trees, beetles, d, m):
         return (aroll, uroll)
 
     best_a, best_u = (None, -np.inf)
-    actions = sim.get_available_actions()
+    actions = sim.get_available_actions_reduced()
     for a in actions:
         u = 0.0
         for _ in range(m):
@@ -61,9 +61,9 @@ def sparse_sampling(sim, trees, beetles, d, m):
             best_a, best_u = (a,u)
     return best_a, best_u
 
-def main():
+def main(nsteps):
     sim = generate_simulator()
-    timesteps = 100
+    timesteps = nsteps
     actions = []
     utility = 0
 
@@ -75,11 +75,40 @@ def main():
         utility += sim.take_action(a)
         utility += sim.simulate_timestep()
         end = time.time()
-        utils.plotTrees(sim.trees, i, max_health = 5000)
+        utils.plotTrees(sim.trees, i, max_health = 500)
         print("Time elapsed for timestep {} of {}: {}".format(i+1, timesteps, end-start))
     return actions, utility
 
+def random_simulation(nsteps):
+    sim = generate_simulator()
+    timesteps = nsteps
+    u = 0
+    for i in range(timesteps):
+        available_actions = sim.get_available_actions_reduced()
+        a = available_actions[np.random.choice(len(available_actions))]
+        u += sim.take_action(a)
+        u += sim.simulate_timestep()
+    return u, sim.trees
+
+def noaction_simulation(nsteps):
+    sim = generate_simulator()
+    timesteps = nsteps
+    u = 0
+    a = [-1,-1]
+    for i in range(timesteps):
+        u += sim.take_action(a)
+        u += sim.simulate_timestep()
+    return u, sim.trees
+
+
 if __name__ == "__main__":
-    a,u = main()
+    timesteps = 50
+    u_random, random_trees = random_simulation(timesteps)
+    print("Utility random: ", u_random)
+    utils.plotTrees(random_trees, "RandomAction", 500)
+    u_none, none_trees = noaction_simulation(timesteps)
+    utils.plotTrees(none_trees, "NoAction", 500)
+    print("Utility of no action: ", u_none)
+    a,u = main(timesteps)
     # print(a,u)
     print("Utility: ", u)
